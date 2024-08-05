@@ -2,7 +2,9 @@ const sauceModel = require("../models/sauceSchema");
 
 exports.getSauces = async (req, res, next) => {
   try {
-    const sauces = await sauceModel.find();
+    const sauces = await sauceModel.find({
+      userId: req.headers.authorization.split(" ")[1],
+    });
     res.json(sauces);
   } catch (error) {
     console.error(error);
@@ -21,34 +23,22 @@ exports.getSauce = async (req, res, next) => {
 };
 exports.addSauce = async (req, res, next) => {
   try {
-    // Check for existing sauce based on userId and name
-    const existingSauce = await sauceModel.findOne({
-      userId: req.headers.authorization.split(" ")[1],
-      name: req.body.name,
+    // Parse the request body to get sauce details
+    const sauceObject = JSON.parse(req.body.sauce);
+
+    // Construct the sauce object including the image URL
+    const sauce = new Sauce({
+      ...sauceObject,
+  
+      imageUrl: `${req.protocol}://${req.get("host")}/uploads/${
+        req.file.filename
+      }`,
     });
 
-    if (existingSauce) {
-      return res.status(409).json({ message: "Sauce already exists" });
-    }
-
-    // Create and save new sauce
-    const sauce = new sauceModel({
-      userId: req.headers.authorization.split(" ")[1],
-      name: req.body.name,
-      manufacturer: req.body.manufacturer,
-      description: req.body.description,
-      mainPepper: req.body.mainPepper,
-      imageUrl: req.body.imageUrl,
-      heat: req.body.heat,
-      likes: req.body.likes,
-      dislikes: req.body.dislikes,
-      usersLiked: req.body.usersLiked,
-      usersDisliked: req.body.usersDisliked,
-    });
-
+    // Save the sauce to the database
     await sauce.save();
 
-    res.status(201).json({ message: "Added sauce successfully" });
+    res.status(201).json({ message: "Sauce added successfully", sauce });
   } catch (error) {
     console.error("Error adding sauce:", error);
     res

@@ -21,22 +21,10 @@ exports.getSauce = async (req, res, next) => {
     res.status(200).send(sauce);
   } catch (error) {}
 };
+
 exports.addSauce = async (req, res, next) => {
   try {
-    // Parse the request body to get sauce details
-    const sauceObject = JSON.parse(req.body.sauce);
-
-    // Construct the sauce object including the image URL
-    const sauce = new Sauce({
-      ...sauceObject,
-  
-      imageUrl: `${req.protocol}://${req.get("host")}/uploads/${
-        req.file.filename
-      }`,
-    });
-
-    // Save the sauce to the database
-    await sauce.save();
+    console.log(req);
 
     res.status(201).json({ message: "Sauce added successfully", sauce });
   } catch (error) {

@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const upload = require("../middleware/auth"); // Ensure the correct path to your upload middleware
+const upload = require("../middleware/upload"); // Ensure the correct path to your upload middleware
 const auth = require("../middleware/auth");
 const saucesCont = require("../controllers/sauces-controller");
 

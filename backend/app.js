@@ -10,21 +10,22 @@ dotenv.config();
 const app = express();
 const password = process.env.DB_PASSWORD;
 
-app.use(cors()); // Enable CORS
+// Configure CORS
+app.use(cors());
 
+// Other middleware and routes
 app.use(express.json());
 app.use("/uploads", express.static("uploads")); // Correct static folder path
 
 // Database Connection
 mongoose
-  .connect(`mongodb+srv://devlulu:${password}@cluster0.9g4tbes.mongodb.net/`)
+  .connect(`mongodb+srv://devlulu:devlulu@cluster0.9g4tbes.mongodb.net/`)
   .then(() => {
     console.log("Successfully connected to MongoDB Atlas!");
   })
   .catch((error) => {
     console.error("Unable to connect to MongoDB Atlas!", error);
   });
-
 
 // Route Middleware
 app.use("/api/auth", userRoutes);

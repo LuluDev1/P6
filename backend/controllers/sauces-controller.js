@@ -22,7 +22,6 @@ exports.getSauce = async (req, res, next) => {
     // Send the found sauce
     res.status(200).json(sauce);
   } catch (error) {
-    // Log and send an error response
     console.error("Error fetching sauce:", error.message);
     res.status(500).json({ message: "Internal server error" });
   }
@@ -35,7 +34,6 @@ exports.addSauce = async (req, res, next) => {
     // Construct the sauce object including the image URL
     const sauce = new sauceModel({
       ...sauceObject,
-
       imageUrl: `${req.protocol}://${req.get("host")}/uploads/${
         req.file.filename
       }`,
@@ -80,18 +78,12 @@ exports.modifySauce = async (req, res, next) => {
 
 exports.deleteSauce = async (req, res, next) => {
   try {
-    // Log the ID being used for deletion
-    console.log("Deleting sauce with ID:", req.params.id);
-
-    // Perform the deletion and wait for it to complete
     const result = await sauceModel.findByIdAndDelete(req.params.id);
 
-    // Check if a document was deleted
     if (!result) {
       return res.status(404).json({ message: "Sauce not found" });
     }
 
-    // Log the result of the deletion
     console.log("Deleted sauce:", result);
 
     // Respond with a success message
@@ -107,36 +99,69 @@ exports.deleteSauce = async (req, res, next) => {
 
 exports.adjustLikes = async (req, res, next) => {
   try {
-    // Extract the like value and userId from the request body
     const { like, userId } = req.body;
+    const sauceId = req.params.id;
 
+    console.log(like);
     // Validate the like value
-    if (![1, -1].includes(like)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid like value. It must be 1 or -1." });
+    if (![1, -1, 0].includes(like)) {
+      return res.status(400).json({
+        message: "Invalid like value.",
+      });
     }
 
     // Find the sauce by ID
-    const sauce = await sauceModel.findById(req.params.id);
+    const sauce = await sauceModel.findById(sauceId);
 
     // Check if the sauce exists
     if (!sauce) {
       return res.status(404).json({ message: "Sauce not found" });
     }
 
-    // Remove the user from both arrays to ensure they can't be in both
-    sauce.usersLiked = sauce.usersLiked.filter((id) => id !== userId);
-    sauce.usersDisliked = sauce.usersDisliked.filter((id) => id !== userId);
-
-    // Adjust the likes and dislikes
+    // Handling the "like" action
     if (like === 1) {
-      sauce.usersLiked.push(userId);
-    } else if (like === -1) {
-      sauce.usersDisliked.push(userId);
+      if (sauce.usersLiked.includes(userId)) {
+        // User already liked this sauce, so remove the like
+        sauce.usersLiked = sauce.usersLiked.filter((id) => id !== userId);
+      } else {
+        // User has not liked this sauce yet, so add the like
+        sauce.usersLiked.push(userId);
+
+        // If the user has disliked the sauce, remove the dislike
+        if (sauce.usersDisliked.includes(userId)) {
+          sauce.usersDisliked = sauce.usersDisliked.filter(
+            (id) => id !== userId
+          );
+        }
+      }
     }
 
-    // Update the counts
+    // Handling the "dislike" action
+    else if (like === -1) {
+      if (sauce.usersDisliked.includes(userId)) {
+        // User already disliked this sauce, so remove the dislike
+        sauce.usersDisliked = sauce.usersDisliked.filter((id) => id !== userId);
+      } else {
+        // User has not disliked this sauce yet, so add the dislike
+        sauce.usersDisliked.push(userId);
+
+        // If the user has liked the sauce, remove the like
+        if (sauce.usersLiked.includes(userId)) {
+          sauce.usersLiked = sauce.usersLiked.filter((id) => id !== userId);
+        }
+      }
+    } else if (like === 0) {
+      // If the user has liked the sauce, remove the like
+      if (sauce.usersLiked.includes(userId)) {
+        sauce.usersLiked = sauce.usersLiked.filter((id) => id !== userId);
+      }
+
+      // If the user has disliked the sauce, remove the dislike
+      if (sauce.usersDisliked.includes(userId)) {
+        sauce.usersDisliked = sauce.usersDisliked.filter((id) => id !== userId);
+      }
+    }
+    // Update counts
     sauce.likes = sauce.usersLiked.length;
     sauce.dislikes = sauce.usersDisliked.length;
 
@@ -147,9 +172,7 @@ exports.adjustLikes = async (req, res, next) => {
     res.status(200).json({ message: "Likes updated successfully", sauce });
   } catch (error) {
     // Log and respond with an error message
-    console.error("Error updating likes:", error.message);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    console.error("Error updating likes:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };

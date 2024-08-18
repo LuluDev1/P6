@@ -1,11 +1,9 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors"); // Import the cors package
 const userRoutes = require("./routes/user-routes");
 const sauceRoutes = require("./routes/sauces-router");
-const dotenv = require("dotenv");
-
-dotenv.config();
 
 const app = express();
 const password = process.env.DB_PASSWORD;
@@ -19,7 +17,7 @@ app.use("/uploads", express.static("uploads")); // Correct static folder path
 
 // Database Connection
 mongoose
-  .connect(`mongodb+srv://devlulu:devlulu@cluster0.9g4tbes.mongodb.net/`)
+  .connect(`mongodb+srv://devlulu:${password}@cluster0.9g4tbes.mongodb.net/`)
   .then(() => {
     console.log("Successfully connected to MongoDB Atlas!");
   })

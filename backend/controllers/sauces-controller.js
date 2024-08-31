@@ -54,8 +54,9 @@ exports.addSauce = async (req, res, next) => {
 };
 exports.modifySauce = async (req, res, next) => {
   try {
+    // FIXME Fix unoathorized user 
+    
     const sauceObject = req.body;
-
     if (req.file) {
       sauceObject.imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
         req.file.filename
@@ -118,11 +119,12 @@ exports.adjustLikes = async (req, res, next) => {
       return res.status(404).json({ message: "Sauce not found" });
     }
 
-    // Handling the "like" action
+    
     if (like === 1) {
       if (sauce.usersLiked.includes(userId)) {
         // User already liked this sauce, so remove the like
-        sauce.usersLiked = sauce.usersLiked.filter((id) => id !== userId);
+        
+        // sauce.usersLiked = sauce.usersLiked.filter((id) => id !== userId);
       } else {
         // User has not liked this sauce yet, so add the like
         sauce.usersLiked.push(userId);
@@ -140,7 +142,7 @@ exports.adjustLikes = async (req, res, next) => {
     else if (like === -1) {
       if (sauce.usersDisliked.includes(userId)) {
         // User already disliked this sauce, so remove the dislike
-        sauce.usersDisliked = sauce.usersDisliked.filter((id) => id !== userId);
+        // sauce.usersDisliked = sauce.usersDisliked.filter((id) => id !== userId);
       } else {
         // User has not disliked this sauce yet, so add the dislike
         sauce.usersDisliked.push(userId);

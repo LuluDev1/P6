@@ -53,25 +53,59 @@ exports.addSauce = async (req, res, next) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 exports.modifySauce = async (req, res, next) => {
   try {
-    if (req.body.userId !== req.auth.userId) {
-      throw new Error("Unothorized");
+    // Parse the sauce object from the request body
+    const sauce = JSON.parse(req.body.sauce);
+
+    // Check if the user is authorized to modify the sauce
+    if (sauce.userId !== req.auth.userId) {
+      return res.status(403).json({ message: "Unauthorized" });
     }
 
-    const sauceObject = req.body;
+    const sauceObject = { ...sauce }; // Use parsed sauce object
+
+    // Fetch the existing sauce from the database
+    const existingSauce = await sauceModel.findById(req.params.id);
+
+    if (!existingSauce) {
+      return res.status(404).json({ message: "Sauce not found" });
+    }
+
+    // Handle image upload if a new file is provided
     if (req.file) {
+      // Construct the path to the old image
+      const oldImagePath = existingSauce.imageUrl.replace(
+        `${req.protocol}://${req.get("host")}`,
+        ""
+      );
+
+      // Delete the old image file
+      fs.unlink(path.join(__dirname, "..", oldImagePath), (err) => {
+        if (err) {
+          console.error("Error deleting old image:", err.message);
+        } else {
+          console.log("Old image deleted:", oldImagePath);
+        }
+      });
+
+      // Update the sauce object with the new image URL
       sauceObject.imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
         req.file.filename
       }`;
     }
-    const sauce = await sauceModel.findByIdAndUpdate(
+
+    // Update the sauce in the database
+    const updatedSauce = await sauceModel.findByIdAndUpdate(
       req.params.id,
       sauceObject,
       { new: true }
     );
 
-    res.status(200).json({ message: "Sauce updated successfully", sauce });
+    res
+      .status(200)
+      .json({ message: "Sauce updated successfully", sauce: updatedSauce });
   } catch (error) {
     console.error("Error updating sauce:", error.message);
     res
@@ -89,9 +123,16 @@ exports.deleteSauce = async (req, res, next) => {
       "..",
       imagepath.replace("http://localhost:3000", "")
     );
-    console.log( localPath);
+    const newpath = localPath.replace("--", "--original-");
 
     fs.unlink(localPath, (err) => {
+      if (err) {
+        console.error("Error deleting file:", err);
+      } else {
+        console.log("Deleted file:", localPath);
+      }
+    });
+    fs.unlink(newpath, (err) => {
       if (err) {
         console.error("Error deleting file:", err);
       } else {

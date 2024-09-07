@@ -1,5 +1,6 @@
 const sauceModel = require("../models/sauceSchema");
-
+const path = require("path");
+const fs = require("fs");
 exports.getSauces = async (req, res, next) => {
   try {
     const sauces = await sauceModel.find();
@@ -54,8 +55,10 @@ exports.addSauce = async (req, res, next) => {
 };
 exports.modifySauce = async (req, res, next) => {
   try {
-    // FIXME Fix unoathorized user 
-    
+    if (req.body.userId !== req.auth.userId) {
+      throw new Error("Unothorized");
+    }
+
     const sauceObject = req.body;
     if (req.file) {
       sauceObject.imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
@@ -80,6 +83,21 @@ exports.modifySauce = async (req, res, next) => {
 exports.deleteSauce = async (req, res, next) => {
   try {
     const result = await sauceModel.findByIdAndDelete(req.params.id);
+    let imagepath = result.imageUrl;
+    let localPath = path.join(
+      __dirname,
+      "..",
+      imagepath.replace("http://localhost:3000", "")
+    );
+    console.log( localPath);
+
+    fs.unlink(localPath, (err) => {
+      if (err) {
+        console.error("Error deleting file:", err);
+      } else {
+        console.log("Deleted file:", localPath);
+      }
+    });
 
     if (!result) {
       return res.status(404).json({ message: "Sauce not found" });
@@ -119,11 +137,9 @@ exports.adjustLikes = async (req, res, next) => {
       return res.status(404).json({ message: "Sauce not found" });
     }
 
-    
     if (like === 1) {
       if (sauce.usersLiked.includes(userId)) {
         // User already liked this sauce, so remove the like
-        
         // sauce.usersLiked = sauce.usersLiked.filter((id) => id !== userId);
       } else {
         // User has not liked this sauce yet, so add the like
